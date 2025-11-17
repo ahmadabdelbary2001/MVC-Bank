@@ -13,4 +13,5 @@ public class ApplicationDbContext : DbContext
     // These DbSet properties tell Entity Framework Core to create tables for these models.
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Account> Accounts { get; set; }
+    public DbSet<Transaction> Transactions { get; set; }
 }

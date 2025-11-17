@@ -27,15 +27,15 @@ public class Account
     [Display(Name = "Initial Balance")]
     public decimal Balance { get; set; } // Renamed from InitialBalance for clarity
     
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    
     public Account()
     {
         AccountNumber = GenerateRandomAccountNumber();
     }
-
-    /// <summary>
-    /// Generates a random 12-character account number ('B' + 11 digits).
-    /// </summary>
-    /// <returns>A string representing the new account number.</returns>
+    
+    // Generates a random 12-character account number ('B' + 11 digits).
+    // returns a string representing the new account number.
     private static string GenerateRandomAccountNumber()
     {
         var random = new Random();
