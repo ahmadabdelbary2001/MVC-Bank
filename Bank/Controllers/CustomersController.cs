@@ -57,14 +57,31 @@ namespace Bank.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Email,PhoneNumber,DateJoined")] Customer customer)
+        public async Task<IActionResult> Create([Bind("Name,Email,PhoneNumber")] Customer customer)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(customer);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    customer.DateJoined = DateTime.UtcNow; // Set the join date
+                    _context.Add(customer);
+                    await _context.SaveChangesAsync();
+
+                    // **THE NEW LOGIC**
+                    // After successfully creating a customer, ALWAYS redirect to the
+                    // account creation page for that new customer.
+                    return RedirectToAction("Create", "Accounts", new { customerId = customer.Id });
+                }
             }
+            catch (DbUpdateException /* ex */)
+            {
+                // Log the error and add a model error to redisplay the form.
+                ModelState.AddModelError("", "Unable to save changes. " +
+                                             "Try again, and if the problem persists, " +
+                                             "see your system administrator.");
+            }
+
+            // If we get here, something failed, so redisplay the form.
             return View(customer);
         }
 

@@ -7,8 +7,10 @@
 <h1>Index</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    @* This link now goes directly to the Create Customer page *@
+    <a asp-controller="Customers" asp-action="Create" class="btn btn-primary">Create New Customer & Account</a>
 </p>
+
 <table class="table">
     <thead>
         <tr>
