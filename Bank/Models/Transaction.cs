@@ -22,7 +22,7 @@ public class Transaction
     public int AccountId { get; set; } // The account this transaction belongs to
 
     [ForeignKey("AccountId")]
-    public virtual Account Account { get; set; }
+    public virtual Account? Account { get; set; }
 
     [Required]
     public TransactionType Type { get; set; } // Deposit, Withdrawal, or Transfer

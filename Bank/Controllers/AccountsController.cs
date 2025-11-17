@@ -114,35 +114,39 @@ namespace Bank.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,CustomerId,AccountNumber,Balance")] Account account)
+        public async Task<IActionResult> Edit(int id, [Bind("Balance")] Account formData)
         {
-            if (id != account.Id)
+            // 1. Fetch the original, trusted account from the database.
+            var accountToUpdate = await _context.Accounts.FindAsync(id);
+
+            if (accountToUpdate == null)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            // 2. Update ONLY the properties that are allowed to be changed.
+            //    We bind only to "Balance" for security.
+            accountToUpdate.Balance = formData.Balance;
+
+            // 3. Manually trigger validation for the updated property if needed.
+            //    For a simple balance update, this is often sufficient.
+            if (await TryUpdateModelAsync(accountToUpdate, "", a => a.Balance))
             {
                 try
                 {
-                    _context.Update(account);
+                    // 4. Save the changes. EF knows which property was modified.
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!AccountExists(account.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError("", "Unable to save changes. " +
+                                                 "The account was modified by another user.");
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "Email", account.CustomerId);
-            return View(account);
+    
+            // If we get here, something failed, redisplay form.
+            return View(accountToUpdate);
         }
 
         // GET: Accounts/Delete/5
