@@ -1,0 +1,29 @@
+@model IEnumerable<Bank.Models.Account>
+
+@{
+    ViewData["Title"] = $"Select Account for {ViewData["TransactionType"]}";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>Please select the account you wish to perform the transaction on.</p>
+<hr />
+
+<div class="list-group">
+    @foreach (var account in Model )
+    {
+        // Determine the correct action to link to based on the transaction type
+        var actionName = $"Create{ViewData["TransactionType"]}";
+        
+        <a asp-action="@actionName" asp-route-accountId="@account.Id" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">@account.Customer.Name</h5>
+                <small>Balance: @account.Balance.ToString("C")</small>
+            </div>
+            <p class="mb-1">Account Number: @account.AccountNumber</p>
+        </a>
+    }
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index">Back to Transaction Types</a>
+</div>

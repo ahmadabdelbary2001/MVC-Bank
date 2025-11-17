@@ -52,22 +52,6 @@
 }
 else
 {
-    // SCENARIO 2: Customer HAS an account.
-    // Display the account details in a table and HIDE the "Create" button.
-    <table class="table">
-        <thead>
-        <tr>
-            <th>Account Number</th>
-            <th>Balance</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td>@Html.DisplayFor(model => model.Account.AccountNumber)</td>
-            <td>@Html.DisplayFor(model => model.Account.Balance)</td>
-        </tr>
-        </tbody>
-    </table>
     
     <table class="table">
         <thead>

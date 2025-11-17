@@ -16,6 +16,28 @@ namespace Bank.Controllers
         {
             _context = context;
         }
+        
+        // GET: Transactions
+        public IActionResult Index()
+        {
+            return View();
+        }
+        
+        // GET: Transactions/SelectAccount
+        // This page allows the user to select which account to perform a transaction on.
+        public async Task<IActionResult> SelectAccount(string transactionType)
+        {
+            if (string.IsNullOrEmpty(transactionType))
+            {
+                return BadRequest();
+            }
+
+            // Pass the transaction type (e.g., "Deposit") and a list of all accounts to the view.
+            ViewData["TransactionType"] = transactionType;
+            var accounts = await _context.Accounts.Include(a => a.Customer).ToListAsync();
+    
+            return View(accounts);
+        }
 
         // GET: Transactions/CreateDeposit
         public IActionResult CreateDeposit(int accountId)

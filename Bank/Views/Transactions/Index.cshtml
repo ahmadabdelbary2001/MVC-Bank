@@ -1,59 +1,27 @@
-@model IEnumerable<Bank.Models.Transaction>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Transactions";
 }
 
-<h1>Index</h1>
+<h1>Select a Transaction Type</h1>
+<p>Choose the type of transaction you wish to perform.</p>
+<hr />
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Account)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Type)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Amount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DestinationAccountId)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Account.AccountNumber)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Type)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Amount)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DestinationAccountId)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<div class="list-group" style="max-width: 400px;">
+    
+    @* Link to the new "Select Account" page, passing the transaction type *@
+    <a asp-action="SelectAccount" asp-route-transactionType="Deposit" class="list-group-item list-group-item-action list-group-item-success">
+        <h4><i class="bi bi-plus-circle"></i> Deposit</h4>
+        <p class="mb-0">Add funds to an existing account.</p>
+    </a>
+    
+    <a asp-action="SelectAccount" asp-route-transactionType="Withdrawal" class="list-group-item list-group-item-action list-group-item-danger">
+        <h4><i class="bi bi-dash-circle"></i> Withdrawal</h4>
+        <p class="mb-0">Remove funds from an existing account.</p>
+    </a>
+    
+    <a href="#" class="list-group-item list-group-item-action list-group-item-info disabled">
+        <h4><i class="bi bi-arrow-left-right"></i> Transfer</h4>
+        <p class="mb-0">Move funds between two accounts. (Coming soon)</p>
+    </a>
+
+</div>
