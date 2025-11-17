@@ -1,0 +1,77 @@
+@model Bank.Models.Customer
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Customer</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Email)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Email)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.PhoneNumber)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.PhoneNumber)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.DateJoined)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.DateJoined)
+        </dd>
+    </dl>
+</div>
+
+<hr />
+
+<h4>Bank Account</h4>
+
+@if (Model.Account == null)
+{
+    // SCENARIO 1: Customer has NO account.
+    // Show a message and the "Create New Account" button.
+    <p>This customer does not have an account yet.</p>
+    <p>
+        <a asp-controller="Accounts" asp-action="Create" asp-route-customerId="@Model.Id" class="btn btn-primary">Create New Account</a>
+    </p>
+}
+else
+{
+    // SCENARIO 2: Customer HAS an account.
+    // Display the account details in a table and HIDE the "Create" button.
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Account Number</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@Html.DisplayFor(model => model.Account.AccountNumber)</td>
+                <td>@Html.DisplayFor(model => model.Account.Balance)</td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+<div class="mt-3">
+    @* This link goes to the Edit page for the CUSTOMER, not the account *@
+    <a asp-action="Edit" asp-route-id="@Model.Id">Edit Customer Details</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

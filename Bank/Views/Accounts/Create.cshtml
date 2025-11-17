@@ -1,0 +1,36 @@
+@model Bank.Models.Account
+
+@{
+    ViewData["Title"] = "Create Account";
+}
+
+<h1>Create Account</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            @* This hidden field sends the customerId *@
+            <input type="hidden" name="customerId" value="@Model.CustomerId" />
+
+            <div class="form-group">
+                <label for="balance" class="control-label">Initial Balance</label>
+                @* The name="balance" matches the parameter in the controller *@
+                <input name="balance" class="form-control" type="number" step="0.01" />
+            </div>
+            
+            <div class="form-group mt-3">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">Back to Customer Details</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
