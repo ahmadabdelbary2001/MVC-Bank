@@ -82,3 +82,111 @@ else
     <a asp-action="Edit" asp-route-id="@Model.Id">Edit Customer Details</a> |
     <a asp-action="Index">Back to List</a>
 </div>
+
+<hr />
+<h4>Transaction History</h4>
+
+@{
+    // --- Logic for Running Balance ---
+    var historyWithBalance = new List<dynamic>();
+    decimal initialBalance = 0;
+
+    if (Model.Account != null)
+    {
+        // THIS IS THE FIX: Safely get the data from ViewBag.
+        var processedHistory = (ViewBag.TransactionHistory as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+        var orderedHistory = processedHistory.OrderBy(h => h.Transaction.CreatedDate).ToList();
+
+        // Calculate the true initial balance by reversing transactions.
+        initialBalance = Model.Account.Balance;
+        foreach (var item in orderedHistory)
+        {
+            var t = item.Transaction;
+            bool isOutflow = t.Type == Bank.Models.TransactionType.Withdrawal || (t.Type == Bank.Models.TransactionType.Transfer && t.DestinationAccountId != null);
+            if (isOutflow)
+            {
+                initialBalance += t.Amount; // Add back outflows
+            }
+            else
+            {
+                initialBalance -= t.Amount; // Subtract inflows
+            }
+        }
+
+        // Calculate the running balance for each transaction.
+        decimal runningBalance = initialBalance;
+        foreach (var item in orderedHistory)
+        {
+            var transaction = item.Transaction;
+            bool isOutflow = transaction.Type == Bank.Models.TransactionType.Withdrawal || (transaction.Type == Bank.Models.TransactionType.Transfer && transaction.DestinationAccountId != null);
+            if (isOutflow)
+            {
+                runningBalance -= transaction.Amount;
+            }
+            else
+            {
+                runningBalance += transaction.Amount;
+            }
+            historyWithBalance.Add(new { HistoryItem = item, BalanceAfter = runningBalance });
+        }
+    }
+    // --- End of Logic ---
+}
+
+<table class="table table-striped">
+    <thead class="thead-light">
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Details</th>
+            <th class="text-end">Debit (-)</th>  @* Outgoing Funds *@
+            <th class="text-end">Credit (+)</th> @* Incoming Funds *@
+            <th class="text-end">Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (historyWithBalance.Any())
+        {
+            @foreach (var item in historyWithBalance.OrderByDescending(h => h.HistoryItem.Transaction.CreatedDate))
+            {
+                var transaction = item.HistoryItem.Transaction;
+                var details = item.HistoryItem.Details;
+                bool isOutflow = transaction.Type == Bank.Models.TransactionType.Withdrawal || (transaction.Type == Bank.Models.TransactionType.Transfer && transaction.DestinationAccountId != null);
+
+                <tr>
+                    <td>@transaction.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        @if (transaction.Type == Bank.Models.TransactionType.Deposit) { <span class="badge bg-success">Deposit</span> }
+                        else if (transaction.Type == Bank.Models.TransactionType.Withdrawal) { <span class="badge bg-danger">Withdrawal</span> }
+                        else if (isOutflow) { <span class="badge bg-warning text-dark">Transfer Out</span> }
+                        else { <span class="badge bg-info">Transfer In</span> }
+                    </td>
+                    <td>@details</td>
+                    <td class="text-end text-danger">
+                        @(isOutflow ? transaction.Amount.ToString("C") : "")
+                    </td>
+                    <td class="text-end text-success">
+                        @(!isOutflow ? transaction.Amount.ToString("C") : "")
+                    </td>
+                    <td class="text-end"><strong>@item.BalanceAfter.ToString("C")</strong></td>
+                </tr>
+            }
+        }
+        
+        @if (Model.Account != null)
+        {
+            <tr class="table-light">
+                <td colspan="5" class="text-end"><em>Initial Balance</em></td>
+                <td class="text-end"><strong>@initialBalance.ToString("C")</strong></td>
+            </tr>
+        }
+        else
+        {
+            <tr>
+                <td colspan="6">
+                    <p>This customer does not have a bank account yet.</p>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -33,14 +33,59 @@ namespace Bank.Controllers
                 return NotFound();
             }
 
-            // The updated query now includes the customer's SINGLE account
             var customer = await _context.Customers
-                .Include(c => c.Account) // Corrected to use the singular property
+                .Include(c => c.Account)
+                    .ThenInclude(a => a.Transactions)
                 .FirstOrDefaultAsync(m => m.Id == id);
-    
+            
             if (customer == null)
             {
                 return NotFound();
+            }
+
+            if (customer.Account != null && customer.Account.Transactions.Any())
+            {
+                var transactionHistoryForView = new List<dynamic>();
+                var allAccountNumbers = await _context.Accounts.ToDictionaryAsync(a => a.Id, a => a.AccountNumber);
+
+                foreach (var transaction in customer.Account.Transactions)
+                {
+                    string details = "-";
+                    if (transaction.Type == TransactionType.Transfer)
+                    {
+                        // Case 1: This is a TRANSFER OUT. We know the destination.
+                        if (transaction.DestinationAccountId.HasValue)
+                        {
+                            if (allAccountNumbers.TryGetValue(transaction.DestinationAccountId.Value, out var destNumber))
+                            {
+                                details = $"To: {destNumber}";
+                            }
+                        }
+                        // Case 2: This is a TRANSFER IN. We need to find the sender.
+                        else
+                        {
+                            // --- THIS IS THE CORRECTED, ROBUST LOGIC ---
+                            // Define a small time window for the search (e.g., +/- 1 second).
+                            var startTime = transaction.CreatedDate.AddSeconds(-1);
+                            var endTime = transaction.CreatedDate.AddSeconds(1);
+
+                            // Find the transaction that was SENT to THIS account within the time window.
+                            var sourceTransaction = await _context.Transactions
+                                .FirstOrDefaultAsync(t => 
+                                    t.DestinationAccountId == transaction.AccountId && 
+                                    t.Amount == transaction.Amount && 
+                                    t.Type == TransactionType.Transfer &&
+                                    t.CreatedDate >= startTime && t.CreatedDate <= endTime); // Use the time window
+
+                            if (sourceTransaction != null && allAccountNumbers.TryGetValue(sourceTransaction.AccountId, out var sourceNumber))
+                            {
+                                details = $"From: {sourceNumber}";
+                            }
+                        }
+                    }
+                    transactionHistoryForView.Add(new { Transaction = transaction, Details = details });
+                }
+                ViewBag.TransactionHistory = transactionHistoryForView;
             }
 
             return View(customer);
@@ -53,8 +98,6 @@ namespace Bank.Controllers
         }
 
         // POST: Customers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,Email,PhoneNumber")] Customer customer)
@@ -63,25 +106,16 @@ namespace Bank.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    customer.DateJoined = DateTime.UtcNow; // Set the join date
+                    customer.DateJoined = DateTime.UtcNow;
                     _context.Add(customer);
                     await _context.SaveChangesAsync();
-
-                    // **THE NEW LOGIC**
-                    // After successfully creating a customer, ALWAYS redirect to the
-                    // account creation page for that new customer.
                     return RedirectToAction("Create", "Accounts", new { customerId = customer.Id });
                 }
             }
-            catch (DbUpdateException /* ex */)
+            catch (DbUpdateException)
             {
-                // Log the error and add a model error to redisplay the form.
-                ModelState.AddModelError("", "Unable to save changes. " +
-                                             "Try again, and if the problem persists, " +
-                                             "see your system administrator.");
+                ModelState.AddModelError("", "Unable to save changes. Try again.");
             }
-
-            // If we get here, something failed, so redisplay the form.
             return View(customer);
         }
 
@@ -102,8 +136,6 @@ namespace Bank.Controllers
         }
 
         // POST: Customers/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Email,PhoneNumber,DateJoined")] Customer customer)
