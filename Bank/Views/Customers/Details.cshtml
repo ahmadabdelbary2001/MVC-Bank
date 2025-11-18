@@ -66,10 +66,11 @@ else
             <td>@Html.DisplayFor(model => model.Account.AccountNumber)</td>
             <td>@Html.DisplayFor(model => model.Account.Balance)</td>
             <td>
-                @* New Buttons *@
                 <a asp-controller="Transactions" asp-action="CreateDeposit" asp-route-accountId="@Model.Account.Id" class="btn btn-success btn-sm">Deposit</a>
                 <a asp-controller="Transactions" asp-action="CreateWithdrawal" asp-route-accountId="@Model.Account.Id" class="btn btn-danger btn-sm">Withdraw</a>
+                <a asp-controller="Transactions" asp-action="CreateTransfer" asp-route-accountId="@Model.Account.Id" class="btn btn-info btn-sm">Transfer</a>
             </td>
+
         </tr>
         </tbody>
     </table>

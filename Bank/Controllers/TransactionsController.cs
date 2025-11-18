@@ -111,5 +111,112 @@ namespace Bank.Controllers
             
             return View(transaction);
         }
+        
+        // GET: /Transactions/CreateTransfer?accountId=5
+        // Prepares the transfer form without a ViewModel.
+        public async Task<IActionResult> CreateTransfer(int accountId)
+        {
+            var sourceAccount = await _context.Accounts.FindAsync(accountId);
+            if (sourceAccount == null)
+            {
+                return NotFound();
+            }
+
+            // Pass the source account's data to the view using ViewData or ViewBag.
+            ViewData["SourceAccountNumber"] = sourceAccount.AccountNumber;
+            ViewData["SourceAccountBalance"] = sourceAccount.Balance.ToString("C");
+            ViewData["SourceAccountId"] = sourceAccount.Id; // Pass the ID for the form action
+            ViewData["CustomerId"] = sourceAccount.CustomerId; // For the "Back" link
+
+            return View();
+        }
+
+        // POST: /Transactions/CreateTransfer
+        // Accepts simple parameters directly from the form.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateTransfer(int sourceAccountId, string destinationAccountNumber, decimal amount)
+        {
+            // 1. Perform validation manually.
+            if (amount <= 0)
+            {
+                ModelState.AddModelError("Amount", "Transfer amount must be positive.");
+            }
+            if (string.IsNullOrWhiteSpace(destinationAccountNumber) || destinationAccountNumber.Length != 12)
+            {
+                ModelState.AddModelError("DestinationAccountNumber", "Destination account number must be 12 digits long.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                // 2. Find both accounts.
+                var sourceAccount = await _context.Accounts.FindAsync(sourceAccountId);
+                var destinationAccount = await _context.Accounts
+                    .FirstOrDefaultAsync(a => a.AccountNumber == destinationAccountNumber);
+
+                // 3. Perform business logic validation.
+                if (sourceAccount == null)
+                {
+                    ModelState.AddModelError("", "Source account could not be found.");
+                }
+                else if (destinationAccount == null)
+                {
+                    ModelState.AddModelError("DestinationAccountNumber", "Destination account number not found.");
+                }
+                else if (sourceAccount.Id == destinationAccount.Id)
+                {
+                    ModelState.AddModelError("DestinationAccountNumber", "Cannot transfer funds to the same account.");
+                }
+                else if (sourceAccount.Balance < amount)
+                {
+                    ModelState.AddModelError("Amount", "Insufficient funds for this transfer.");
+                }
+                else
+                {
+                    // 4. All checks passed. Perform the transaction.
+                    sourceAccount.Balance -= amount;
+                    destinationAccount.Balance += amount;
+
+                    var withdrawalTransaction = new Transaction
+                    {
+                        AccountId = sourceAccount.Id,
+                        Type = TransactionType.Transfer,
+                        Amount = amount,
+                        DestinationAccountId = destinationAccount.Id
+                    };
+
+                    var depositTransaction = new Transaction
+                    {
+                        AccountId = destinationAccount.Id,
+                        Type = TransactionType.Transfer,
+                        Amount = amount
+                    };
+
+                    _context.Transactions.Add(withdrawalTransaction);
+                    _context.Transactions.Add(depositTransaction);
+
+                    await _context.SaveChangesAsync();
+
+                    return RedirectToAction("Details", "Customers", new { id = sourceAccount.CustomerId });
+                }
+            }
+
+            // If validation fails, repopulate ViewData and return to the form.
+            var sourceAccountForView = await _context.Accounts.FindAsync(sourceAccountId);
+            if (sourceAccountForView != null)
+            {
+                ViewData["SourceAccountNumber"] = sourceAccountForView.AccountNumber;
+                ViewData["SourceAccountBalance"] = sourceAccountForView.Balance.ToString("C");
+                ViewData["SourceAccountId"] = sourceAccountForView.Id;
+                ViewData["CustomerId"] = sourceAccountForView.CustomerId;
+            }
+            
+            // Pass the user's entered values back to the form so they don't have to re-type.
+            ViewData["EnteredDestinationAccount"] = destinationAccountNumber;
+            ViewData["EnteredAmount"] = amount;
+
+            return View();
+        }
+
     }
 }
